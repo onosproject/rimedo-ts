@@ -1,0 +1,13 @@
+apiVersion: v2
+name: rimedo-ts
+description: RIMEDO-Labs xApp Traffic Steering
+kubeVersion: ">=1.16.0"
+type: application
+version: 0.0.1
+appVersion: v0.0.1
+home: https://rimedolabs.com
+maintainers:
+  - name: Lukasz Kulacz
+    email: lukasz.kulacz@rimedolabs.com
+  - name: Adam Samorzewski
+    email: adam.samorzewski@rimedolabs.com

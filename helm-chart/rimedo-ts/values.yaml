@@ -1,0 +1,8 @@
+image:
+  repository: rimedo-labs/rimedo-ts
+  pullPolicy: IfNotPresent
+  tag: v0.0.1
+
+service:
+  grpc:
+    port: 5150

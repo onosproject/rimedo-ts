@@ -1,0 +1,71 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "rimedo-ts.fullname" . }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: {{ template "rimedo-ts.fullname" . }}
+      app: rimedo
+      type: rimedo-ts
+      resource: {{ template "rimedo-ts.fullname" . }}
+  template:
+    metadata:
+      annotations:
+        proxy.onosproject.org/inject: "true"
+      labels:
+        name: {{ template "rimedo-ts.fullname" . }}
+        app: rimedo
+        type: rimedo-ts
+        resource: {{ template "rimedo-ts.fullname" . }}
+    spec:
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: grpc
+              containerPort: {{ .Values.service.grpc.port }}
+          startupProbe:
+            tcpSocket:
+              port: {{ .Values.service.grpc.port }}
+            periodSeconds: 5
+            failureThreshold: 60
+          readinessProbe:
+            tcpSocket:
+              port: {{ .Values.service.grpc.port }}
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: {{ .Values.service.grpc.port }}
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          env:
+            - name: POD_ID
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            - name: SERVICE_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: SERVICE_NAME
+              value: {{ template "rimedo-ts.fullname" . }}
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName

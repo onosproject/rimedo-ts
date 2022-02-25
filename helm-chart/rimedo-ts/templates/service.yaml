@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "rimedo-ts.fullname" . }}
+  labels:
+    app: {{ include "rimedo-ts.fullname" . }}
+spec:
+  type: NodePort
+  ports:
+    - name: grpc
+      port: {{ .Values.service.grpc.port }}
+  selector:
+    name: {{ include "rimedo-ts.fullname" . }}
