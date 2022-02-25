@@ -7,7 +7,7 @@
 </p>
 
 <p align="center">
-  <a href="https://img.shields.io/github/v/tag/RIMEDO-Labs/xapp-ts?style=for-the-badge"><img src="https://img.shields.io/github/v/tag/RIMEDO-Labs/xapp-ts?style=for-the-badge" /></a>
+  <a href="https://img.shields.io/github/v/tag/onosproject/rimedo-ts?style=for-the-badge"><img src="https://img.shields.io/github/v/tag/onosproject/rimedo-ts?style=for-the-badge" /></a>
 </p>
 
 ## Overview
