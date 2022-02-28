@@ -41,7 +41,7 @@ else
 endif
 endif
 
-docker-push-latest:
+docker-push-latest: docker-login
 	docker push onosproject/$(XAPPNAME):latest
 
 publish: # @HELP publish version on github and dockerhub
