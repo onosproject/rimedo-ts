@@ -2,7 +2,7 @@
 #GO111MODULE=on 
 
 XAPPNAME=rimedo-ts
-VERSION=v0.0.1
+VERSION=latest
 
 build:
 	GOPRIVATE="github.com/onosproject/*" go build -o build/_output/$(XAPPNAME) ./cmd/$(XAPPNAME)
@@ -15,10 +15,39 @@ docker:
 	sudo docker build --network host -f build/Dockerfile -t onosproject/$(XAPPNAME):$(VERSION) . 
 	@rm -rf vendor
 
+images: build
+	@go mod vendor
+	docker build -f build/Dockerfile -t onosproject/$(XAPPNAME):$(VERSION) .
+	@rm -rf vendor
+
 install-xapp:
 	helm install -n riab $(XAPPNAME) ./helm-chart/$(XAPPNAME) --values ./helm-chart/$(XAPPNAME)/values.yaml
 
 delete-xapp:
 	-helm uninstall -n riab $(XAPPNAME)
 
-dev: delete-xapp docker install-xapp 
+dev: delete-xapp docker install-xapp
+
+test: build
+jenkins-test: build
+
+docker-login:
+ifdef DOCKER_USER
+ifdef DOCKER_PASSWORD
+	echo ${DOCKER_PASSWORD} | docker login -u ${DOCKER_USER} --password-stdin
+else
+	@echo "DOCKER_USER is specified but DOCKER_PASSWORD is missing"
+	@exit 1
+endif
+endif
+
+docker-push-latest:
+	docker push onosproject/$(XAPPNAME):latest
+
+publish: # @HELP publish version on github and dockerhub
+	./build/build-tools/publish-version ${VERSION} onosproject/$(XAPPNAME)
+
+jenkins-publish: jenkins-tools images docker-push-latest # @HELP Jenkins calls this to publish artifacts
+	./build/build-tools/release-merge-commit
+
+
