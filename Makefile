@@ -2,7 +2,7 @@
 #GO111MODULE=on 
 
 XAPPNAME=rimedo-ts
-VERSION=latest
+RIMEDO_TS_VERSION := latest
 
 build:
 	GOPRIVATE="github.com/onosproject/*" go build -o build/_output/$(XAPPNAME) ./cmd/$(XAPPNAME)
@@ -12,13 +12,17 @@ include ./build/build-tools/make/onf-common.mk
 
 docker:
 	@go mod vendor
-	sudo docker build --network host -f build/Dockerfile -t onosproject/$(XAPPNAME):$(VERSION) . 
+	sudo docker build --network host -f build/Dockerfile -t onosproject/$(XAPPNAME):$(RIMEDO_TS_VERSION) .
 	@rm -rf vendor
 
 images: build
 	@go mod vendor
-	docker build -f build/Dockerfile -t onosproject/$(XAPPNAME):$(VERSION) .
+	docker build -f build/Dockerfile -t onosproject/$(XAPPNAME):$(RIMEDO_TS_VERSION) .
 	@rm -rf vendor
+
+kind: images
+	@if [ "`kind get clusters`" = '' ]; then echo "no kind cluster found" && exit 1; fi
+	kind load docker-image onosproject/onos-mho:${RIMEDO_TS_VERSION}
 
 install-xapp:
 	helm install -n riab $(XAPPNAME) ./helm-chart/$(XAPPNAME) --values ./helm-chart/$(XAPPNAME)/values.yaml
