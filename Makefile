@@ -22,7 +22,7 @@ images: build
 
 kind: images
 	@if [ "`kind get clusters`" = '' ]; then echo "no kind cluster found" && exit 1; fi
-	kind load docker-image onosproject/onos-mho:${RIMEDO_TS_VERSION}
+	kind load docker-image onosproject/$(XAPPNAME):${RIMEDO_TS_VERSION}
 
 install-xapp:
 	helm install -n riab $(XAPPNAME) ./helm-chart/$(XAPPNAME) --values ./helm-chart/$(XAPPNAME)/values.yaml
