@@ -2,6 +2,7 @@
 package main
 
 import (
+	"github.com/onosproject/onos-lib-go/pkg/env"
 	"os"
 	"os/signal"
 	"syscall"
@@ -21,7 +22,7 @@ func main() {
 	log.Info("Starting RIMEDO Labs Traffic Steering xAPP")
 
 	sdranConfig := sdran.Config{
-		AppID:              "rimedo-ts",
+		AppID:              env.GetPodName(),
 		E2tAddress:         "onos-e2t",
 		E2tPort:            5150,
 		TopoAddress:        "onos-topo",

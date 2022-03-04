@@ -223,8 +223,8 @@ func (m *Manager) deployPolicies(ctx context.Context) {
 				SD:  &sd,
 				Sst: 1,
 				PlmnID: policyAPI.PlmnID{
-					Mcc: "314",
-					Mnc: "628",
+					Mcc: "138",
+					Mnc: "426",
 				},
 			},
 			UeID: &keys[i],
@@ -262,7 +262,6 @@ func (m *Manager) deployPolicies(ctx context.Context) {
 
 		tsResult := policyManager.GetTsResultForUEV2(scopeUe, rsrps, cellIDs)
 		plmnId, err := mho.GetPlmnIdFromMccMnc(tsResult.PlmnID.Mcc, tsResult.PlmnID.Mnc)
-
 		if err != nil {
 			log.Warnf("Cannot get PLMN ID from these MCC and MNC parameters:%v,%v.", tsResult.PlmnID.Mcc, tsResult.PlmnID.Mnc)
 		} else {
@@ -394,6 +393,6 @@ func (m *Manager) changeCellsTypes(ctx context.Context) {
 
 func PlmnIDNciToCGI(plmnID uint64, nci uint64) string {
 	cgi := strconv.FormatInt(int64(plmnID<<36|(nci&0xfffffffff)), 16)
-	cgi = cgi[0:2] + cgi[4:5] + cgi[3:4] + cgi[5:6] + cgi[2:3] + cgi[6:]
+	//cgi = cgi[0:2] + cgi[4:5] + cgi[3:4] + cgi[5:6] + cgi[2:3] + cgi[6:]
 	return cgi[0:8] + cgi[13:14] + cgi[10:12] + cgi[8:10] + cgi[14:15] + cgi[12:13]
 }
