@@ -266,7 +266,6 @@ func (m *Manager) deployPolicies(ctx context.Context) {
 			log.Warnf("Cannot get PLMN ID from these MCC and MNC parameters:%v,%v.", tsResult.PlmnID.Mcc, tsResult.PlmnID.Mnc)
 		} else {
 			targetCellCGI := PlmnIDNciToCGI(plmnId, uint64(*tsResult.CID.NcI))
-			log.Infof("PLMNID %x / NCI %v / CGI %v", plmnId, uint64(*tsResult.CID.NcI), targetCellCGI)
 			m.sdranManager.SwitchUeBetweenCells(ctx, keys[i], targetCellCGI)
 		}
 

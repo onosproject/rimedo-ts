@@ -120,6 +120,7 @@ func (s *TestSuite) TestTsSm(t *testing.T) {
 				return
 			}
 			pNCGI = ues[0].ServingTower
+			t.Logf("[In Guard interval] UEID: %016d / NCGI: %x", ues[0].IMSI, ues[0].ServingTower)
 			continue
 		}
 
@@ -132,6 +133,7 @@ func (s *TestSuite) TestTsSm(t *testing.T) {
 			return
 		}
 
+		t.Logf("[Checking] UEID: %016d / NCGI: %x", ues[0].IMSI, ues[0].ServingTower)
 		// if it is different, HO happens - test failed because the installed policy prohibit the HO.
 		if ues[0].ServingTower != pNCGI {
 			t.Errorf("Wrong sCell NCGI: original %v / changed %x", pNCGI, ues[0].ServingTower)
