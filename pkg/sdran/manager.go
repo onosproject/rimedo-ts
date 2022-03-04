@@ -36,7 +36,7 @@ type Config struct {
 	TSPolicySchemePath string
 }
 
-func NewManager(config Config) *Manager {
+func NewManager(config Config, flag bool) *Manager {
 
 	ueStore := store.NewStore()
 	cellStore := store.NewStore()
@@ -64,7 +64,7 @@ func NewManager(config Config) *Manager {
 
 	manager := &Manager{
 		e2Manager:       e2Manager,
-		mhoCtrl:         mho.NewController(indCh, ueStore, cellStore, onosPolicyStore, policyMap),
+		mhoCtrl:         mho.NewController(indCh, ueStore, cellStore, onosPolicyStore, policyMap, flag),
 		policyManager:   policy.NewPolicyManager(&policyMap),
 		ueStore:         ueStore,
 		cellStore:       cellStore,
@@ -88,13 +88,13 @@ type Manager struct {
 	mutex           sync.RWMutex
 }
 
-func (m *Manager) Run() {
-	if err := m.start(); err != nil {
+func (m *Manager) Run(flag *bool) {
+	if err := m.start(flag); err != nil {
 		log.Fatal("Unable to run Manager", err)
 	}
 }
 
-func (m *Manager) start() error {
+func (m *Manager) start(flag *bool) error {
 	m.startNorthboundServer()
 	err := m.e2Manager.Start()
 	if err != nil {
@@ -102,7 +102,7 @@ func (m *Manager) start() error {
 		return err
 	}
 
-	go m.mhoCtrl.Run(context.Background())
+	go m.mhoCtrl.Run(context.Background(), flag)
 
 	return nil
 }
@@ -308,16 +308,16 @@ func (m *Manager) SwitchUeBetweenCells(ctx context.Context, ueID string, targetC
 					if controlRequest, err := controlHandler.CreateMhoControlRequest(); err == nil {
 
 						controlChannel <- controlRequest
-						log.Infof("\nCONTROL MESSAGE: UE [ID:%v, 5QI:%v] switched between CELLs [CGI:%v -> CGI:%v]\n", chosenUe.UeID, chosenUe.FiveQi, servingCell.CGIString, targetCell.CGIString)
+						log.Infof("CONTROL MESSAGE: UE [ID:%v, 5QI:%v] switched between CELLs [CGI:%v -> CGI:%v]\n", chosenUe.UeID, chosenUe.FiveQi, servingCell.CGIString, targetCell.CGIString)
 
 					} else {
-						log.Warn("Control request problem :(", err)
+						log.Warn("Control request problem!", err)
 					}
 				} else {
-					log.Warn("Control message problem :(", err)
+					log.Warn("Control message problem!", err)
 				}
 			} else {
-				log.Warn("Control header problem :(", err)
+				log.Warn("Control header problem!", err)
 			}
 		}()
 

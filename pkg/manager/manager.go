@@ -8,6 +8,7 @@ import (
 	"math/rand"
 	"sort"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/RIMEDO-Labs/rimedo-ts/pkg/mho"
@@ -19,6 +20,9 @@ import (
 )
 
 var log = logging.GetLogger("rimedo-ts", "ts-manager")
+var logLength = 150
+var nodesLogLen = 0
+var policiesLogLen = 0
 
 type Config struct {
 	AppID       string
@@ -30,9 +34,9 @@ type Config struct {
 	SMVersion   string
 }
 
-func NewManager(sdranConfig sdran.Config, a1Config a1.Config) *Manager {
+func NewManager(sdranConfig sdran.Config, a1Config a1.Config, flag bool) *Manager {
 
-	sdranManager := sdran.NewManager(sdranConfig)
+	sdranManager := sdran.NewManager(sdranConfig, flag)
 
 	a1PolicyTypes := make([]*topoAPI.A1PolicyType, 0)
 	a1Policy := &topoAPI.A1PolicyType{
@@ -49,15 +53,19 @@ func NewManager(sdranConfig sdran.Config, a1Config a1.Config) *Manager {
 	}
 
 	manager := &Manager{
-		sdranManager: sdranManager,
-		a1Manager:    *a1Manager,
+		sdranManager:   sdranManager,
+		a1Manager:      *a1Manager,
+		topoIDsEnabled: flag,
+		mutex:          sync.RWMutex{},
 	}
 	return manager
 }
 
 type Manager struct {
-	sdranManager *sdran.Manager
-	a1Manager    a1.Manager
+	sdranManager   *sdran.Manager
+	a1Manager      a1.Manager
+	topoIDsEnabled bool
+	mutex          sync.RWMutex
 }
 
 func (m *Manager) Run() {
@@ -83,47 +91,50 @@ func (m *Manager) start() error {
 	m.sdranManager.AddService(a1.NewA1EIService())
 	m.sdranManager.AddService(a1.NewA1PService(&policyMap, policyChange))
 
-	m.sdranManager.Run()
+	handleFlag := false
+
+	m.sdranManager.Run(&handleFlag)
 
 	m.a1Manager.Start()
 
 	go func() {
 		for range policyChange {
-			log.Debug("------------------------------------------")
-			log.Debug("--------- POLICY STORE CHANGED! ----------")
-			log.Debug("------------------------------------------")
+			log.Debug("")
+			drawWithLine("POLICY STORE CHANGED!", logLength)
+			log.Debug("")
 			if err := m.updatePolicies(ctx, policyMap); err != nil {
 				log.Warn("Some problems occured when updating Policy store!")
 			}
-			log.Debug("------------------------------------------")
-			log.Debug("------------------------------------------")
 			log.Debug("")
-			m.checkPolicies(ctx, true)
+			m.checkPolicies(ctx, true, true, true)
 		}
 
 	}()
 	flag := true
-	time.Sleep(15 * time.Second)
+	show := false
+	prepare := false
+	counter := 0
+	delay := 3
+	time.Sleep(5 * time.Second)
 	log.Info("\n\n\n\n\n\n\n\n\n\n")
+	handleFlag = true
 	go func() {
 		for {
 			time.Sleep(1 * time.Second)
-			m.checkPolicies(ctx, flag)
+			counter++
+			if counter == delay {
+				compareLengths()
+				counter = 0
+				show = true
+			} else if counter == delay-1 {
+				prepare = true
+			} else {
+				show = false
+				prepare = false
+			}
+			m.checkPolicies(ctx, flag, show, prepare)
+			m.showAvailableNodes(ctx, show, prepare)
 			flag = false
-		}
-	}()
-
-	go func() {
-		for {
-			log.Debug("")
-			log.Debug("------------------------------------------")
-			log.Debug("----------- AVALIABLE NODES --------------")
-			log.Debug("------------------------------------------")
-			time.Sleep(15 * time.Second)
-			m.showAvailableNodes(ctx)
-			log.Debug("------------------------------------------")
-			log.Debug("------------------------------------------")
-			log.Debug("")
 		}
 	}()
 
@@ -131,18 +142,20 @@ func (m *Manager) start() error {
 }
 
 func (m *Manager) updatePolicies(ctx context.Context, policyMap map[string][]byte) error {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
 	policies := m.sdranManager.GetPolicies(ctx)
 	for k := range policies {
 		if _, ok := policyMap[k]; !ok {
 			m.sdranManager.DeletePolicy(ctx, k)
-			log.Infof("\nPOLICY  MESSAGE: Policy [ID:%v] deleted\n", k)
+			log.Infof("POLICY MESSAGE: Policy [ID:%v] deleted\n", k)
 		}
 	}
 	for i := range policyMap {
 		r, err := policyAPI.UnmarshalAPI(policyMap[i])
 		if err == nil {
 			policyObject := m.sdranManager.CreatePolicy(ctx, i, &r)
-			info := fmt.Sprintf("\nPOLICY  MESSAGE: Policy [ID:%v] applied -> ", policyObject.Key)
+			info := fmt.Sprintf("POLICY MESSAGE: Policy [ID:%v] applied -> ", policyObject.Key)
 			previous := false
 			if policyObject.API.Scope.SliceID != nil {
 				info = info + fmt.Sprintf("Slice [SD:%v, SST:%v, PLMN:(MCC:%v, MNC:%v)]", *policyObject.API.Scope.SliceID.SD, policyObject.API.Scope.SliceID.Sst, policyObject.API.Scope.SliceID.PlmnID.Mcc, policyObject.API.Scope.SliceID.PlmnID.Mnc)
@@ -152,7 +165,16 @@ func (m *Manager) updatePolicies(ctx context.Context, policyMap map[string][]byt
 				if previous {
 					info = info + ", "
 				}
-				info = info + fmt.Sprintf("UE [ID:%v]", *policyObject.API.Scope.UeID)
+				ue := *policyObject.API.Scope.UeID
+				new_ue := ue
+				for i := 0; i < len(ue); i++ {
+					if ue[i:i+1] == "0" {
+						new_ue = ue[i+1:]
+					} else {
+						break
+					}
+				}
+				info = info + fmt.Sprintf("UE [ID:%v]", new_ue)
 				previous = true
 			}
 			if policyObject.API.Scope.QosID != nil {
@@ -186,12 +208,13 @@ func (m *Manager) updatePolicies(ctx context.Context, policyMap map[string][]byt
 				for j := range policyObject.API.TSPResources[i].CellIDList {
 					nci := *policyObject.API.TSPResources[i].CellIDList[j].CID.NcI
 					plmnId, _ := mho.GetPlmnIdFromMccMnc(policyObject.API.TSPResources[i].CellIDList[j].PlmnID.Mcc, policyObject.API.TSPResources[i].CellIDList[j].PlmnID.Mnc)
-					cgi := PlmnIDNciToCGI(plmnId, uint64(nci))
+					cgi := m.PlmnIDNciToCGI(plmnId, uint64(nci))
 					info = info + fmt.Sprintf(" CELL [CGI:%v],", cgi)
 				}
-				info = info[0:len(info)-1] + "\n"
+				info = info[0 : len(info)-1]
 
 			}
+			info = info + "\n"
 			log.Info(info)
 		} else {
 			log.Warn("Can't unmarshal the JSON file!")
@@ -202,7 +225,6 @@ func (m *Manager) updatePolicies(ctx context.Context, policyMap map[string][]byt
 }
 
 func (m *Manager) deployPolicies(ctx context.Context) {
-
 	policyManager := m.sdranManager.GetPolicyManager()
 	ues := m.sdranManager.GetUEs(ctx)
 	keys := make([]string, 0, len(ues))
@@ -212,7 +234,6 @@ func (m *Manager) deployPolicies(ctx context.Context) {
 	sort.Strings(keys)
 
 	for i := range keys {
-
 		var cellIDs []policyAPI.CellID
 		var rsrps []int
 		fiveQi := ues[keys[i]].FiveQi
@@ -223,8 +244,8 @@ func (m *Manager) deployPolicies(ctx context.Context) {
 				SD:  &sd,
 				Sst: 1,
 				PlmnID: policyAPI.PlmnID{
-					Mcc: "138",
-					Mnc: "426",
+					Mcc: "314",
+					Mnc: "628",
 				},
 			},
 			UeID: &keys[i],
@@ -233,13 +254,14 @@ func (m *Manager) deployPolicies(ctx context.Context) {
 			},
 		}
 
-		cgiKeys := make([]string, 0, len(ues))
+		cgiKeys := make([]string, 0, len(ues[keys[i]].CgiTable))
 		for cgi := range ues[keys[i]].CgiTable {
 			cgiKeys = append(cgiKeys, cgi)
 		}
-
+		inside := false
 		for j := range cgiKeys {
 
+			inside = true
 			cgi := ues[keys[i]].CgiTable[cgiKeys[j]]
 			nci := int64(mho.GetNciFromCellGlobalID(cgi))
 			plmnIdBytes := mho.GetPlmnIDBytesFromCellGlobalID(cgi)
@@ -260,13 +282,18 @@ func (m *Manager) deployPolicies(ctx context.Context) {
 
 		}
 
-		tsResult := policyManager.GetTsResultForUEV2(scopeUe, rsrps, cellIDs)
-		plmnId, err := mho.GetPlmnIdFromMccMnc(tsResult.PlmnID.Mcc, tsResult.PlmnID.Mnc)
-		if err != nil {
-			log.Warnf("Cannot get PLMN ID from these MCC and MNC parameters:%v,%v.", tsResult.PlmnID.Mcc, tsResult.PlmnID.Mnc)
-		} else {
-			targetCellCGI := PlmnIDNciToCGI(plmnId, uint64(*tsResult.CID.NcI))
-			m.sdranManager.SwitchUeBetweenCells(ctx, keys[i], targetCellCGI)
+		if inside {
+
+			tsResult := policyManager.GetTsResultForUEV2(scopeUe, rsrps, cellIDs)
+			plmnId, err := mho.GetPlmnIdFromMccMnc(tsResult.PlmnID.Mcc, tsResult.PlmnID.Mnc)
+
+			if err != nil {
+				log.Warnf("Cannot get PLMN ID from these MCC and MNC parameters:%v,%v.", tsResult.PlmnID.Mcc, tsResult.PlmnID.Mnc)
+			} else {
+				targetCellCGI := m.PlmnIDNciToCGI(plmnId, uint64(*tsResult.CID.NcI))
+				m.sdranManager.SwitchUeBetweenCells(ctx, keys[i], targetCellCGI)
+			}
+
 		}
 
 		cellIDs = nil
@@ -276,48 +303,153 @@ func (m *Manager) deployPolicies(ctx context.Context) {
 
 }
 
-func (m *Manager) checkPolicies(ctx context.Context, flag bool) {
-	log.Debug("")
-	log.Debug("------------------------------------------")
-	log.Debug("-------------- POLIECIES -----------------")
-	log.Debug("------------------------------------------")
+func (m *Manager) checkPolicies(ctx context.Context, defaultFlag bool, showFlag bool, prepareFlag bool) {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+	policyLen := 0
 	policies := m.sdranManager.GetPolicies(ctx)
 	keys := make([]string, 0, len(policies))
 	for k := range policies {
 		keys = append(keys, k)
 	}
 	sort.Strings(keys)
-	if flag && (len(policies) == 0) {
-		log.Infof("\nPOLICY  MESSAGE: Default policy applied\n")
+	if defaultFlag && (len(policies) == 0) {
+		log.Infof("POLICY MESSAGE: Default policy applied\n")
 	}
+	if prepareFlag && len(policies) != 0 {
+		if showFlag {
+			log.Debug("")
+			drawWithLine("POLICIES", logLength)
+		}
+		for _, key := range keys {
+			policyObject := policies[key]
+			info := fmt.Sprintf("ID:%v POLICY: {", policyObject.Key)
+			previous := false
+			if policyObject.API.Scope.SliceID != nil {
+				info = info + fmt.Sprintf("Slice [SD:%v, SST:%v, PLMN:(MCC:%v, MNC:%v)]", *policyObject.API.Scope.SliceID.SD, policyObject.API.Scope.SliceID.Sst, policyObject.API.Scope.SliceID.PlmnID.Mcc, policyObject.API.Scope.SliceID.PlmnID.Mnc)
+				previous = true
+			}
+			if policyObject.API.Scope.UeID != nil {
+				if previous {
+					info = info + ", "
+				}
+				ue := *policyObject.API.Scope.UeID
+				new_ue := ue
+				for i := 0; i < len(ue); i++ {
+					if ue[i:i+1] == "0" {
+						new_ue = ue[i+1:]
+					} else {
+						break
+					}
+				}
+				info = info + fmt.Sprintf("UE [ID:%v]", new_ue)
+				previous = true
+			}
+			if policyObject.API.Scope.QosID != nil {
+				if previous {
+					info = info + ", "
+				}
+				if policyObject.API.Scope.QosID.QcI != nil {
+					info = info + fmt.Sprintf("QoS [QCI:%v]", *policyObject.API.Scope.QosID.QcI)
+				}
+				if policyObject.API.Scope.QosID.The5QI != nil {
+					info = info + fmt.Sprintf("QoS [5QI:%v]", *policyObject.API.Scope.QosID.The5QI)
+				}
+			}
+			if policyObject.API.Scope.CellID != nil {
+				if previous {
+					info = info + ", "
+				}
+				info = info + "CELL ["
+				if policyObject.API.Scope.CellID.CID.NcI != nil {
 
-	for _, key := range keys {
-		log.Debugf("Key:%v Policy:%v", key, policies[key].API)
+					info = info + fmt.Sprintf("NCI:%v, ", *policyObject.API.Scope.CellID.CID.NcI)
+				}
+				if policyObject.API.Scope.CellID.CID.EcI != nil {
+
+					info = info + fmt.Sprintf("ECI:%v, ", *policyObject.API.Scope.CellID.CID.EcI)
+				}
+				info = info + fmt.Sprintf("PLMN:(MCC:%v, MNC:%v)]", policyObject.API.Scope.CellID.PlmnID.Mcc, policyObject.API.Scope.CellID.PlmnID.Mnc)
+			}
+			for i := range policyObject.API.TSPResources {
+				info = info + fmt.Sprintf(" - (%v) -", policyObject.API.TSPResources[i].Preference)
+				for j := range policyObject.API.TSPResources[i].CellIDList {
+					nci := *policyObject.API.TSPResources[i].CellIDList[j].CID.NcI
+					plmnId, _ := mho.GetPlmnIdFromMccMnc(policyObject.API.TSPResources[i].CellIDList[j].PlmnID.Mcc, policyObject.API.TSPResources[i].CellIDList[j].PlmnID.Mnc)
+					cgi := m.PlmnIDNciToCGI(plmnId, uint64(nci))
+					info = info + fmt.Sprintf(" CELL [CGI:%v],", cgi)
+				}
+				info = info[0 : len(info)-1]
+
+			}
+			info = info + "} STATUS: "
+			if policyObject.IsEnforced {
+				info = info + "ENFORCED"
+			} else {
+				info = info + "NOT ENFORCED"
+			}
+			if policyLen < len(info) {
+				policyLen = len(info)
+			}
+			if showFlag {
+				log.Debug(info)
+			}
+		}
+		if showFlag {
+			log.Debug("")
+		}
 	}
-	log.Debug("------------------------------------------")
-	log.Debug("------------------------------------------")
-	log.Debug("")
 	m.deployPolicies(ctx)
 }
 
-func (m *Manager) showAvailableNodes(ctx context.Context) {
-	log.Debug("")
-	log.Debug("------------------------------------------")
-	log.Debug("---------------- CELLS -------------------")
-	log.Debug("------------------------------------------")
+func (m *Manager) showAvailableNodes(ctx context.Context, showFlag bool, prepareFlag bool) {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+	cellLen := 0
+	ueLen := 0
 	cells := m.sdranManager.GetCellTypes(ctx)
+	cellsObjects := m.sdranManager.GetCells(ctx)
 	keys := make([]string, 0, len(cells))
 	for k := range cells {
 		keys = append(keys, k)
 	}
 	sort.Strings(keys)
-
-	for _, key := range keys {
-		log.Debugf("ID:%v CGI:%v CellType:%v", key, cells[key].CGI, cells[key].CellType)
+	if prepareFlag && len(cells) > 0 && len(cellsObjects) > 0 {
+		if showFlag {
+			log.Debug("")
+			drawWithLine("CELLS", logLength)
+		}
+		for _, key := range keys {
+			cgi_str := m.CgiFromTopoToIndicationFormat(cells[key].CGI)
+			info := fmt.Sprintf("ID:%v CGI:%v UEs:[", key, cgi_str)
+			cellObject := m.sdranManager.GetCell(ctx, cgi_str)
+			inside := false
+			if cellObject != nil {
+				for ue := range cellObject.Ues {
+					inside = true
+					new_ue := ue
+					for i := 0; i < len(ue); i++ {
+						if ue[i:i+1] == "0" {
+							new_ue = ue[i+1:]
+						} else {
+							break
+						}
+					}
+					info = info + new_ue + " "
+				}
+			}
+			if inside {
+				info = info[:len(info)-1]
+			}
+			info = info + "]"
+			if cellLen < len(info) {
+				cellLen = len(info)
+			}
+			if showFlag {
+				log.Debug(info)
+			}
+		}
 	}
-	log.Debug("------------------------------------------")
-	log.Debug("------------------------------------------")
-	log.Debug("")
 
 	ues := m.sdranManager.GetUEs(ctx)
 	keys = make([]string, 0, len(ues))
@@ -325,53 +457,65 @@ func (m *Manager) showAvailableNodes(ctx context.Context) {
 		keys = append(keys, k)
 	}
 	sort.Strings(keys)
-	log.Debug("")
-	log.Debug("------------------------------------------")
-	log.Debug("----------------- UES --------------------")
-	log.Debug("------------------------------------------")
-	for _, key := range keys {
-		ueIdString, _ := strconv.Atoi(key)
-		info := fmt.Sprintf("ID:%v 5QI: %v CGI:%v RSRP:%v [", ueIdString, ues[key].FiveQi, ues[key].CGIString, ues[key].RsrpServing)
+	if prepareFlag && len(ues) > 0 {
+		if showFlag {
+			log.Debug("")
+			drawWithLine("UES", logLength)
+		}
+		for _, key := range keys {
+			ueIdString, _ := strconv.Atoi(key)
+			cgiString := ues[key].CGIString
+			if cgiString == "" {
+				cgiString = "NONE"
+			}
+			status := "CONNECTED"
+			if ues[key].Idle {
+				status = "IDLE     "
+			}
+			info := fmt.Sprintf("ID:%v STATUS:%v 5QI: %v CGI:%v CGIs(RSRP): [", ueIdString, status, ues[key].FiveQi, cgiString)
 
-		neigh_keys := make([]string, 0, len(ues[key].RsrpNeighbors))
-		for k := range ues[key].RsrpNeighbors {
-			neigh_keys = append(neigh_keys, k)
+			cgi_keys := make([]string, 0, len(ues[key].RsrpTable))
+			for k := range ues[key].RsrpTable {
+				cgi_keys = append(cgi_keys, k)
+			}
+			sort.Strings(cgi_keys)
+			inside := false
+			for _, cgi := range cgi_keys {
+				inside = true
+				info += fmt.Sprintf("%v (%v) ", cgi, ues[key].RsrpTable[cgi])
+				rsrp_str := strconv.Itoa(int(ues[key].RsrpTable[cgi]))
+				if len(rsrp_str) < 4 {
+					diff := 4 - len(rsrp_str)
+					for i := 0; i < diff; i++ {
+						info = info + " "
+					}
+				}
+			}
+			if inside {
+				info = info[:len(info)-1]
+			}
+			info = info + "]"
+			if ueLen < len(info) {
+				ueLen = len(info)
+			}
+			if showFlag {
+				log.Debug(info)
+			}
 		}
-		sort.Strings(neigh_keys)
-		for _, neigh := range neigh_keys {
-			info += fmt.Sprintf("%v ", ues[key].RsrpNeighbors[neigh])
+		if showFlag {
+			log.Debug("")
 		}
-		info += "]"
-		log.Debug(info)
 	}
-	log.Debug("------------------------------------------")
-	log.Debug("------------------------------------------")
-	log.Debug("")
-	log.Debug("")
-	log.Debug("------------------------------------------")
-	log.Debug("------------- UES [TABLE] ----------------")
-	log.Debug("------------------------------------------")
-	for _, key := range keys {
-		ueIdString, _ := strconv.Atoi(key)
-		info := fmt.Sprintf("ID:%v 5QI: %v CGI:%v [", ueIdString, ues[key].FiveQi, ues[key].CGIString)
-
-		cgi_keys := make([]string, 0, len(ues[key].RsrpTable))
-		for k := range ues[key].RsrpTable {
-			cgi_keys = append(cgi_keys, k)
-		}
-		sort.Strings(cgi_keys)
-		for _, cgi := range cgi_keys {
-			info += fmt.Sprintf("%v ", cgi)
-		}
-		info += "]"
-		log.Debug(info)
+	if cellLen > ueLen {
+		nodesLogLen = cellLen
+	} else {
+		nodesLogLen = ueLen
 	}
-	log.Debug("------------------------------------------")
-	log.Debug("------------------------------------------")
-	log.Debug("")
 }
 
 func (m *Manager) changeCellsTypes(ctx context.Context) {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
 	cellTypes := make(map[int]string)
 	cellTypes[0] = "Macro"
 	cellTypes[1] = "SmallCell"
@@ -391,8 +535,46 @@ func (m *Manager) changeCellsTypes(ctx context.Context) {
 	}
 }
 
-func PlmnIDNciToCGI(plmnID uint64, nci uint64) string {
+func (m *Manager) PlmnIDNciToCGI(plmnID uint64, nci uint64) string {
 	cgi := strconv.FormatInt(int64(plmnID<<36|(nci&0xfffffffff)), 16)
-	//cgi = cgi[0:2] + cgi[4:5] + cgi[3:4] + cgi[5:6] + cgi[2:3] + cgi[6:]
-	return cgi[0:8] + cgi[13:14] + cgi[10:12] + cgi[8:10] + cgi[14:15] + cgi[12:13]
+	if m.topoIDsEnabled {
+		cgi = cgi[0:6] + cgi[14:15] + cgi[12:14] + cgi[10:12] + cgi[8:10] + cgi[6:8]
+	}
+	return cgi
+}
+
+func (m *Manager) CgiFromTopoToIndicationFormat(cgi string) string {
+	if !m.topoIDsEnabled {
+		cgi = cgi[0:6] + cgi[13:15] + cgi[11:13] + cgi[9:11] + cgi[7:9] + cgi[6:7]
+	}
+	return cgi
+}
+
+func drawWithLine(word string, length int) {
+	wordLength := len(word)
+	diff := length - wordLength
+	info := ""
+	if diff == length {
+		for i := 0; i < diff; i++ {
+			info = info + "-"
+		}
+	} else {
+		info = " " + word + " "
+		diff -= 2
+		for i := 0; i < diff/2; i++ {
+			info = "-" + info + "-"
+		}
+		if diff%2 != 0 {
+			info = info + "-"
+		}
+	}
+	log.Debug(info)
+}
+
+func compareLengths() {
+	temp := nodesLogLen
+	if nodesLogLen < policiesLogLen {
+		temp = policiesLogLen
+	}
+	logLength = temp
 }

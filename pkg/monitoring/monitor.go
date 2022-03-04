@@ -15,7 +15,7 @@ import (
 	e2ind "github.com/onosproject/onos-ric-sdk-go/pkg/e2/indication"
 )
 
-var log = logging.GetLogger("monitoring")
+var log = logging.GetLogger("rimedo-ts", "monitoring")
 
 func NewMonitor(streamReader broker.StreamReader, nodeID topoapi.ID, indChan chan *mho.E2NodeIndication, triggerType e2sm_mho.MhoTriggerType) *Monitor {
 	return &Monitor{
@@ -59,7 +59,6 @@ func (m *Monitor) Start(ctx context.Context) error {
 }
 
 func (m *Monitor) processIndication(ctx context.Context, indication e2api.Indication, nodeID topoapi.ID) error {
-	log.Debugf("processIndication, nodeID: %v, indication: %v ", nodeID, indication)
 
 	m.indChan <- &mho.E2NodeIndication{
 		NodeID:      string(nodeID),

@@ -25,15 +25,17 @@ type E2NodeIndication struct {
 	IndMsg      indication.Indication
 }
 
-func NewController(indChan chan *E2NodeIndication, ueStore store.Store, cellStore store.Store, onosPolicyStore store.Store, policies map[string]*PolicyData) *Controller {
+func NewController(indChan chan *E2NodeIndication, ueStore store.Store, cellStore store.Store, onosPolicyStore store.Store, policies map[string]*PolicyData, flag bool) *Controller {
 
 	return &Controller{
 		IndChan:         indChan,
 		ueStore:         ueStore,
 		cellStore:       cellStore,
 		onosPolicyStore: onosPolicyStore,
+		mu:              sync.RWMutex{},
 		cells:           make(map[string]*CellData),
 		policies:        policies,
+		topoIDsEnabled:  flag,
 	}
 }
 
@@ -45,13 +47,14 @@ type Controller struct {
 	mu              sync.RWMutex
 	cells           map[string]*CellData
 	policies        map[string]*PolicyData
+	topoIDsEnabled  bool
 }
 
-func (c *Controller) Run(ctx context.Context) {
-	go c.listenIndChan(ctx)
+func (c *Controller) Run(ctx context.Context, flag *bool) {
+	go c.listenIndChan(ctx, flag)
 }
 
-func (c *Controller) listenIndChan(ctx context.Context) {
+func (c *Controller) listenIndChan(ctx context.Context, flag *bool) {
 	var err error
 	for indMsg := range c.IndChan {
 
@@ -66,9 +69,9 @@ func (c *Controller) listenIndChan(ctx context.Context) {
 				switch x := indMessage.E2SmMhoIndicationMessage.(type) {
 				case *e2sm_mho.E2SmMhoIndicationMessage_IndicationMessageFormat1:
 					if indMsg.TriggerType == e2sm_mho.MhoTriggerType_MHO_TRIGGER_TYPE_UPON_RCV_MEAS_REPORT {
-						go c.handleMeasReport(ctx, indHeader.GetIndicationHeaderFormat1(), indMessage.GetIndicationMessageFormat1(), e2NodeID)
+						go c.handleMeasReport(ctx, indHeader.GetIndicationHeaderFormat1(), indMessage.GetIndicationMessageFormat1(), e2NodeID, flag)
 					} else if indMsg.TriggerType == e2sm_mho.MhoTriggerType_MHO_TRIGGER_TYPE_PERIODIC {
-						go c.handlePeriodicReport(ctx, indHeader.GetIndicationHeaderFormat1(), indMessage.GetIndicationMessageFormat1(), e2NodeID)
+						go c.handlePeriodicReport(ctx, indHeader.GetIndicationHeaderFormat1(), indMessage.GetIndicationMessageFormat1(), e2NodeID, flag)
 					}
 				case *e2sm_mho.E2SmMhoIndicationMessage_IndicationMessageFormat2:
 					go c.handleRrcState(ctx, indHeader.GetIndicationHeaderFormat1(), indMessage.GetIndicationMessageFormat2(), e2NodeID)
@@ -83,7 +86,7 @@ func (c *Controller) listenIndChan(ctx context.Context) {
 	}
 }
 
-func (c *Controller) handlePeriodicReport(ctx context.Context, header *e2sm_mho.E2SmMhoIndicationHeaderFormat1, message *e2sm_mho.E2SmMhoIndicationMessageFormat1, e2NodeID string) {
+func (c *Controller) handlePeriodicReport(ctx context.Context, header *e2sm_mho.E2SmMhoIndicationHeaderFormat1, message *e2sm_mho.E2SmMhoIndicationMessageFormat1, e2NodeID string, flag *bool) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	ueID, err := GetUeID(message.GetUeId())
@@ -91,7 +94,7 @@ func (c *Controller) handlePeriodicReport(ctx context.Context, header *e2sm_mho.
 		log.Errorf("handlePeriodicReport() couldn't extract UeID: %v", err)
 	}
 	cgi := GetCGIFromIndicationHeader(header)
-	cgi = ConvertCgiToTheRightForm(cgi)
+	cgi = c.ConvertCgiToTheRightForm(cgi)
 	cgiObject := header.GetCgi()
 
 	ueIdString := strconv.Itoa(int(ueID))
@@ -110,7 +113,6 @@ func (c *Controller) handlePeriodicReport(ctx context.Context, header *e2sm_mho.
 		return
 	}
 
-	ueData.CGI = cgiObject
 	ueData.E2NodeID = e2NodeID
 
 	rsrpServing, rsrpNeighbors, rsrpTable, cgiTable := c.GetRsrpFromMeasReport(ctx, GetNciFromCellGlobalID(header.GetCgi()), message.MeasReport)
@@ -118,8 +120,8 @@ func (c *Controller) handlePeriodicReport(ctx context.Context, header *e2sm_mho.
 	old5qi := ueData.FiveQi
 	ueData.FiveQi = c.GetFiveQiFromMeasReport(ctx, GetNciFromCellGlobalID(header.GetCgi()), message.MeasReport)
 
-	if old5qi != ueData.FiveQi {
-		log.Infof("\nQUALITY MESSAGE: 5QI for UE [ID:%v] changed [5QI:%v]\n", ueData.UeID, ueData.FiveQi)
+	if *flag && (old5qi != ueData.FiveQi) {
+		log.Infof("\t\tQUALITY MESSAGE: 5QI for UE [ID:%v] changed [5QI:%v]\n", ueData.UeID, ueData.FiveQi)
 	}
 
 	if !newUe && rsrpServing == ueData.RsrpServing && reflect.DeepEqual(rsrpNeighbors, ueData.RsrpNeighbors) {
@@ -131,7 +133,7 @@ func (c *Controller) handlePeriodicReport(ctx context.Context, header *e2sm_mho.
 
 }
 
-func (c *Controller) handleMeasReport(ctx context.Context, header *e2sm_mho.E2SmMhoIndicationHeaderFormat1, message *e2sm_mho.E2SmMhoIndicationMessageFormat1, e2NodeID string) {
+func (c *Controller) handleMeasReport(ctx context.Context, header *e2sm_mho.E2SmMhoIndicationHeaderFormat1, message *e2sm_mho.E2SmMhoIndicationMessageFormat1, e2NodeID string, flag *bool) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	ueID, err := GetUeID(message.GetUeId())
@@ -139,7 +141,7 @@ func (c *Controller) handleMeasReport(ctx context.Context, header *e2sm_mho.E2Sm
 		log.Errorf("handleMeasReport() couldn't extract UeID: %v", err)
 	}
 	cgi := GetCGIFromIndicationHeader(header)
-	cgi = ConvertCgiToTheRightForm(cgi)
+	cgi = c.ConvertCgiToTheRightForm(cgi)
 	cgiObject := header.GetCgi()
 
 	ueIdString := strconv.Itoa(int(ueID))
@@ -156,15 +158,14 @@ func (c *Controller) handleMeasReport(ctx context.Context, header *e2sm_mho.E2Sm
 		return
 	}
 
-	ueData.CGI = cgiObject
 	ueData.E2NodeID = e2NodeID
 
 	ueData.RsrpServing, ueData.RsrpNeighbors, ueData.RsrpTable, ueData.CgiTable = c.GetRsrpFromMeasReport(ctx, GetNciFromCellGlobalID(header.GetCgi()), message.MeasReport)
 
 	old5qi := ueData.FiveQi
 	ueData.FiveQi = c.GetFiveQiFromMeasReport(ctx, GetNciFromCellGlobalID(header.GetCgi()), message.MeasReport)
-	if old5qi != ueData.FiveQi {
-		log.Infof("\nQUALITY MESSAGE: 5QI for UE [ID:%v] changed [5QI:%v]\n", ueData.UeID, ueData.FiveQi)
+	if *flag && (old5qi != ueData.FiveQi) {
+		log.Infof("\t\tQUALITY MESSAGE: 5QI for UE [ID:%v] changed [5QI:%v]\n", ueData.UeID, ueData.FiveQi)
 	}
 
 	c.SetUe(ctx, ueData)
@@ -179,7 +180,7 @@ func (c *Controller) handleRrcState(ctx context.Context, header *e2sm_mho.E2SmMh
 		log.Errorf("handleRrcState() couldn't extract UeID: %v", err)
 	}
 	cgi := GetCGIFromIndicationHeader(header)
-	cgi = ConvertCgiToTheRightForm(cgi)
+	cgi = c.ConvertCgiToTheRightForm(cgi)
 	cgiObject := header.GetCgi()
 
 	ueIdString := strconv.Itoa(int(ueID))
@@ -196,7 +197,6 @@ func (c *Controller) handleRrcState(ctx context.Context, header *e2sm_mho.E2SmMh
 		return
 	}
 
-	ueData.CGI = cgiObject
 	ueData.E2NodeID = e2NodeID
 
 	newRrcState := message.GetRrcStatus().String()
@@ -215,6 +215,7 @@ func (c *Controller) CreateUe(ctx context.Context, ueID string) *UeData {
 		CGIString:     "",
 		RrcState:      e2sm_mho.Rrcstatus_name[int32(e2sm_mho.Rrcstatus_RRCSTATUS_CONNECTED)],
 		RsrpNeighbors: make(map[string]int32),
+		Idle:          false,
 	}
 	_, err := c.ueStore.Put(ctx, ueID, *ueData)
 	if err != nil {
@@ -251,6 +252,7 @@ func (c *Controller) AttachUe(ctx context.Context, ueData *UeData, cgi string, c
 	c.DetachUe(ctx, ueData)
 
 	ueData.CGIString = cgi
+	ueData.CGI = cgiObject
 	c.SetUe(ctx, ueData)
 	cell := c.GetCell(ctx, cgi)
 	if cell == nil {
@@ -271,9 +273,11 @@ func (c *Controller) SetUeRrcState(ctx context.Context, ueData *UeData, newRrcSt
 
 	if oldRrcState == e2sm_mho.Rrcstatus_name[int32(e2sm_mho.Rrcstatus_RRCSTATUS_CONNECTED)] &&
 		newRrcState == e2sm_mho.Rrcstatus_name[int32(e2sm_mho.Rrcstatus_RRCSTATUS_IDLE)] {
+		ueData.Idle = true
 		c.DetachUe(ctx, ueData)
 	} else if oldRrcState == e2sm_mho.Rrcstatus_name[int32(e2sm_mho.Rrcstatus_RRCSTATUS_IDLE)] &&
 		newRrcState == e2sm_mho.Rrcstatus_name[int32(e2sm_mho.Rrcstatus_RRCSTATUS_CONNECTED)] {
+		ueData.Idle = false
 		c.AttachUe(ctx, ueData, cgi, cgiObject)
 	}
 	ueData.RrcState = newRrcState
@@ -318,6 +322,7 @@ func (c *Controller) SetCell(ctx context.Context, cellData *CellData) {
 	if err != nil {
 		panic("bad data")
 	}
+	c.cells[cellData.CGIString] = cellData
 }
 
 func (c *Controller) GetFiveQiFromMeasReport(ctx context.Context, servingNci uint64, measReport []*e2sm_mho.E2SmMhoMeasurementReportItem) int64 {
@@ -353,20 +358,19 @@ func (c *Controller) GetRsrpFromMeasReport(ctx context.Context, servingNci uint6
 
 		if GetNciFromCellGlobalID(measReportItem.GetCgi()) == servingNci {
 			CGIString := GetCGIFromMeasReportItem(measReportItem)
-			CGIString = ConvertCgiToTheRightForm(CGIString)
+			CGIString = c.ConvertCgiToTheRightForm(CGIString)
 			rsrpServing = measReportItem.GetRsrp().GetValue()
 			rsrpTable[CGIString] = measReportItem.GetRsrp().GetValue()
 			cgiTable[CGIString] = measReportItem.GetCgi()
 		} else {
 			CGIString := GetCGIFromMeasReportItem(measReportItem)
-			CGIString = ConvertCgiToTheRightForm(CGIString)
+			CGIString = c.ConvertCgiToTheRightForm(CGIString)
 			rsrpNeighbors[CGIString] = measReportItem.GetRsrp().GetValue()
 			rsrpTable[CGIString] = measReportItem.GetRsrp().GetValue()
 			cgiTable[CGIString] = measReportItem.GetCgi()
 			cell := c.GetCell(ctx, CGIString)
 			if cell == nil {
-				cell = c.CreateCell(ctx, CGIString, measReportItem.GetCgi())
-				c.SetCell(ctx, cell)
+				_ = c.CreateCell(ctx, CGIString, measReportItem.GetCgi())
 			}
 		}
 	}
@@ -411,6 +415,7 @@ func (c *Controller) SetPolicy(ctx context.Context, key string, policy *PolicyDa
 	if err != nil {
 		panic("bad data")
 	}
+	c.policies[policy.Key] = policy
 }
 
 func (c *Controller) DeletePolicy(ctx context.Context, key string) {
@@ -425,6 +430,9 @@ func (c *Controller) GetPolicyStore() *store.Store {
 	return &c.onosPolicyStore
 }
 
-func ConvertCgiToTheRightForm(cgi string) string {
-	return cgi[0:8] + cgi[13:14] + cgi[10:12] + cgi[8:10] + cgi[14:15] + cgi[12:13]
+func (c *Controller) ConvertCgiToTheRightForm(cgi string) string {
+	if c.topoIDsEnabled {
+		return cgi[0:6] + cgi[14:15] + cgi[12:14] + cgi[10:12] + cgi[8:10] + cgi[6:8]
+	}
+	return cgi
 }
