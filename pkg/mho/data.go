@@ -18,6 +18,7 @@ type UeData struct {
 	RsrpNeighbors map[string]int32
 	RsrpTable     map[string]int32
 	CgiTable      map[string]*e2sm_v2_ies.Cgi
+	Idle          bool
 }
 
 type CellData struct {

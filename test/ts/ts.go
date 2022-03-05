@@ -2,19 +2,21 @@ package ts
 
 import (
 	"fmt"
-	"github.com/onosproject/onos-api/go/onos/ransim/types"
 	"net"
 	"os"
 	"strings"
 
+	"github.com/onosproject/onos-api/go/onos/ransim/types"
+
 	//"context"
+	"testing"
+	"time"
+
 	"github.com/RIMEDO-Labs/rimedo-ts/pkg/manager"
 	"github.com/RIMEDO-Labs/rimedo-ts/pkg/northbound/a1"
 	"github.com/RIMEDO-Labs/rimedo-ts/pkg/sdran"
 	"github.com/RIMEDO-Labs/rimedo-ts/test/utils"
 	"github.com/onosproject/onos-lib-go/pkg/certs"
-	"testing"
-	"time"
 )
 
 // TestTsSm is the function for Helmit-based integration test
@@ -70,7 +72,7 @@ func (s *TestSuite) TestTsSm(t *testing.T) {
 		return
 	}
 
-	mgr := manager.NewManager(sdranConfig, a1Config)
+	mgr := manager.NewManager(sdranConfig, a1Config, false)
 	mgr.Run()
 
 	// get UE ID

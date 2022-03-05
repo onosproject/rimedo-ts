@@ -2,7 +2,6 @@
 package main
 
 import (
-	"github.com/onosproject/onos-lib-go/pkg/env"
 	"os"
 	"os/signal"
 	"syscall"
@@ -18,11 +17,11 @@ var log = logging.GetLogger("rimedo-ts")
 
 func main() {
 
-	log.SetLevel(logging.InfoLevel)
+	log.SetLevel(logging.DebugLevel)
 	log.Info("Starting RIMEDO Labs Traffic Steering xAPP")
 
 	sdranConfig := sdran.Config{
-		AppID:              env.GetPodName(),
+		AppID:              "rimedo-ts",
 		E2tAddress:         "onos-e2t",
 		E2tPort:            5150,
 		TopoAddress:        "onos-topo",
@@ -45,7 +44,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	mgr := manager.NewManager(sdranConfig, a1Config)
+	mgr := manager.NewManager(sdranConfig, a1Config, false)
 	mgr.Run()
 
 	killSignal := make(chan os.Signal, 1)
