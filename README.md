@@ -196,12 +196,13 @@ TS xApp was tested under this version of SD-RAN modules. Tested under ran-simula
 
 | Module        | Version       | 
 | ------------- |--------------:| 
-| onos-a1t      | v0.1.10       | 
+| onos-a1t      | v0.1.11       | 
 | onos-cli      | v0.9.10       | 
-| onos-config   | v0.10.23      | 
-| onos-e2t      | v0.10.6       | 
+| onos-config   | v0.10.27      | 
+| onos-e2t      | v0.10.11      | 
 | onos-topo     | v0.9.2        | 
 | ran-simulator | v0.9.6        | 
+| e2sm_mho_go   | v0.8.7        |
 
 ### Deployment
 
