@@ -274,6 +274,7 @@ func (m *Manager) SwitchUeBetweenCells(ctx context.Context, ueID string, targetC
 		targetCell.CumulativeHandoversOut++
 		servingCell.CumulativeHandoversIn++
 
+		chosenUe.Idle = false
 		m.AttachUe(ctx, &chosenUe, targetCellCGI, targetCell.CGI)
 
 		m.SetCell(ctx, targetCell)
