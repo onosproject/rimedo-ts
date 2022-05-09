@@ -7,10 +7,6 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/RIMEDO-Labs/rimedo-ts/pkg/mho"
-	"github.com/RIMEDO-Labs/rimedo-ts/pkg/policy"
-	"github.com/RIMEDO-Labs/rimedo-ts/pkg/rnib"
-	"github.com/RIMEDO-Labs/rimedo-ts/pkg/southbound/e2"
 	policyAPI "github.com/onosproject/onos-a1-dm/go/policy_schemas/traffic_steering_preference/v2"
 	e2tAPI "github.com/onosproject/onos-api/go/onos/e2t/e2"
 	e2api "github.com/onosproject/onos-api/go/onos/e2t/e2/v1beta1"
@@ -21,6 +17,10 @@ import (
 	"github.com/onosproject/onos-lib-go/pkg/northbound"
 	control "github.com/onosproject/onos-mho/pkg/mho"
 	"github.com/onosproject/onos-mho/pkg/store"
+	"github.com/onosproject/rimedo-ts/pkg/mho"
+	"github.com/onosproject/rimedo-ts/pkg/policy"
+	"github.com/onosproject/rimedo-ts/pkg/rnib"
+	"github.com/onosproject/rimedo-ts/pkg/southbound/e2"
 )
 
 var log = logging.GetLogger("rimedo-ts", "sdran", "manager")

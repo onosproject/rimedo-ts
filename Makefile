@@ -24,6 +24,12 @@ kind: images
 	@if [ "`kind get clusters`" = '' ]; then echo "no kind cluster found" && exit 1; fi
 	kind load docker-image onosproject/$(XAPPNAME):${RIMEDO_TS_VERSION}
 
+helmit-ts: integration-test-namespace # @HELP run PCI tests locally
+	helmit test -n test ./cmd/rimedo-ts-test --timeout 30m --no-teardown \
+			--suite ts
+
+integration-tests: helmit-ts
+
 test: build
 jenkins-test: build
 
