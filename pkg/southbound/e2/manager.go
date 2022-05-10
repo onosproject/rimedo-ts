@@ -8,9 +8,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/RIMEDO-Labs/rimedo-ts/pkg/mho"
-	"github.com/RIMEDO-Labs/rimedo-ts/pkg/monitoring"
-	"github.com/RIMEDO-Labs/rimedo-ts/pkg/rnib"
+	"github.com/onosproject/rimedo-ts/pkg/mho"
+	"github.com/onosproject/rimedo-ts/pkg/monitoring"
+	"github.com/onosproject/rimedo-ts/pkg/rnib"
 	prototypes "github.com/gogo/protobuf/types"
 	e2api "github.com/onosproject/onos-api/go/onos/e2t/e2/v1beta1"
 	topoapi "github.com/onosproject/onos-api/go/onos/topo"

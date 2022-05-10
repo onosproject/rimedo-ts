@@ -5,7 +5,7 @@
 package ts
 
 import (
-	"github.com/RIMEDO-Labs/rimedo-ts/test/utils"
+	"github.com/onosproject/rimedo-ts/test/utils"
 	"github.com/onosproject/helmit/pkg/helm"
 	"github.com/onosproject/helmit/pkg/input"
 	"github.com/onosproject/helmit/pkg/test"

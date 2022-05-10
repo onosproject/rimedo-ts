@@ -11,9 +11,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/RIMEDO-Labs/rimedo-ts/pkg/mho"
-	"github.com/RIMEDO-Labs/rimedo-ts/pkg/northbound/a1"
-	"github.com/RIMEDO-Labs/rimedo-ts/pkg/sdran"
+	"github.com/onosproject/rimedo-ts/pkg/mho"
+	"github.com/onosproject/rimedo-ts/pkg/northbound/a1"
+	"github.com/onosproject/rimedo-ts/pkg/sdran"
 	policyAPI "github.com/onosproject/onos-a1-dm/go/policy_schemas/traffic_steering_preference/v2"
 	topoAPI "github.com/onosproject/onos-api/go/onos/topo"
 	"github.com/onosproject/onos-lib-go/pkg/logging"

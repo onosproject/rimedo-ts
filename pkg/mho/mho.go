@@ -4,6 +4,7 @@ package mho
 
 import (
 	"context"
+	e2api "github.com/onosproject/onos-api/go/onos/e2t/e2/v1beta1"
 	"reflect"
 	"strconv"
 	"sync"
@@ -13,7 +14,6 @@ import (
 	e2sm_v2_ies "github.com/onosproject/onos-e2-sm/servicemodels/e2sm_mho_go/v2/e2sm-v2-ies"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
 	"github.com/onosproject/onos-mho/pkg/store"
-	"github.com/onosproject/onos-ric-sdk-go/pkg/e2/indication"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -22,7 +22,7 @@ var log = logging.GetLogger("rimedo-ts", "mho")
 type E2NodeIndication struct {
 	NodeID      string
 	TriggerType e2sm_mho.MhoTriggerType
-	IndMsg      indication.Indication
+	IndMsg      e2api.Indication
 }
 
 func NewController(indChan chan *E2NodeIndication, ueStore store.Store, cellStore store.Store, onosPolicyStore store.Store, policies map[string]*PolicyData, flag bool) *Controller {
@@ -58,8 +58,8 @@ func (c *Controller) listenIndChan(ctx context.Context, flag *bool) {
 	var err error
 	for indMsg := range c.IndChan {
 
-		indHeaderByte := indMsg.IndMsg.Payload.Header
-		indMessageByte := indMsg.IndMsg.Payload.Message
+		indHeaderByte := indMsg.IndMsg.Header
+		indMessageByte := indMsg.IndMsg.Payload
 		e2NodeID := indMsg.NodeID
 
 		indHeader := e2sm_mho.E2SmMhoIndicationHeader{}

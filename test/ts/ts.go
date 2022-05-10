@@ -12,10 +12,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/RIMEDO-Labs/rimedo-ts/pkg/manager"
-	"github.com/RIMEDO-Labs/rimedo-ts/pkg/northbound/a1"
-	"github.com/RIMEDO-Labs/rimedo-ts/pkg/sdran"
-	"github.com/RIMEDO-Labs/rimedo-ts/test/utils"
+	"github.com/onosproject/rimedo-ts/pkg/manager"
+	"github.com/onosproject/rimedo-ts/pkg/northbound/a1"
+	"github.com/onosproject/rimedo-ts/pkg/sdran"
+	"github.com/onosproject/rimedo-ts/test/utils"
 	"github.com/onosproject/onos-lib-go/pkg/certs"
 )
 

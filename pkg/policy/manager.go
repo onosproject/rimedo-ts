@@ -9,7 +9,7 @@ import (
 	"math"
 	"os"
 
-	"github.com/RIMEDO-Labs/rimedo-ts/pkg/mho"
+	"github.com/onosproject/rimedo-ts/pkg/mho"
 	policyAPI "github.com/onosproject/onos-a1-dm/go/policy_schemas/traffic_steering_preference/v2"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
 	"github.com/xeipuuv/gojsonschema"
