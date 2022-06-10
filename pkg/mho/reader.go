@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2019-present Open Networking Foundation <info@opennetworking.org>
+// SPDX-FileCopyrightText: 2019-present Rimedo Labs
+//
+// SPDX-License-Identifier: Apache-2.0
 // Copy from onosproject/onos-mho/pkg/monitoring/monitor.go
 // modified by RIMEDO-Labs team
 package mho

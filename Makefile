@@ -1,3 +1,8 @@
+# SPDX-FileCopyrightText: 2019-present Open Networking Foundation <info@opennetworking.org>
+# SPDX-FileCopyrightText: 2019-present Rimedo Labs
+#
+# SPDX-License-Identifier: Apache-2.0
+
 .PHONY: build
 #GO111MODULE=on 
 
@@ -30,8 +35,8 @@ helmit-ts: integration-test-namespace # @HELP run PCI tests locally
 
 integration-tests: helmit-ts
 
-test: build
-jenkins-test: build
+test: build license
+jenkins-test: build license
 
 docker-login:
 ifdef DOCKER_USER

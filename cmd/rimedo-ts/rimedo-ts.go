@@ -1,4 +1,9 @@
+// SPDX-FileCopyrightText: 2019-present Open Networking Foundation <info@opennetworking.org>
+// SPDX-FileCopyrightText: 2019-present Rimedo Labs
+//
+// SPDX-License-Identifier: Apache-2.0
 // Created by RIMEDO-Labs team
+
 package main
 
 import (
@@ -6,11 +11,11 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/onosproject/onos-lib-go/pkg/certs"
+	"github.com/onosproject/onos-lib-go/pkg/logging"
 	"github.com/onosproject/rimedo-ts/pkg/manager"
 	"github.com/onosproject/rimedo-ts/pkg/northbound/a1"
 	"github.com/onosproject/rimedo-ts/pkg/sdran"
-	"github.com/onosproject/onos-lib-go/pkg/certs"
-	"github.com/onosproject/onos-lib-go/pkg/logging"
 )
 
 var log = logging.GetLogger("rimedo-ts")

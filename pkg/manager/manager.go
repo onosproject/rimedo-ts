@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2019-present Open Networking Foundation <info@opennetworking.org>
+// SPDX-FileCopyrightText: 2019-present Rimedo Labs
+//
+// SPDX-License-Identifier: Apache-2.0
 // Created by RIMEDO-Labs team
 // based on any onosproject manager
 package manager
@@ -11,12 +15,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/onosproject/rimedo-ts/pkg/mho"
-	"github.com/onosproject/rimedo-ts/pkg/northbound/a1"
-	"github.com/onosproject/rimedo-ts/pkg/sdran"
 	policyAPI "github.com/onosproject/onos-a1-dm/go/policy_schemas/traffic_steering_preference/v2"
 	topoAPI "github.com/onosproject/onos-api/go/onos/topo"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
+	"github.com/onosproject/rimedo-ts/pkg/mho"
+	"github.com/onosproject/rimedo-ts/pkg/northbound/a1"
+	"github.com/onosproject/rimedo-ts/pkg/sdran"
 )
 
 var log = logging.GetLogger("rimedo-ts", "ts-manager")

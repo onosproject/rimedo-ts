@@ -1,3 +1,8 @@
+// SPDX-FileCopyrightText: 2019-present Open Networking Foundation <info@opennetworking.org>
+// SPDX-FileCopyrightText: 2019-present Rimedo Labs
+//
+// SPDX-License-Identifier: Apache-2.0
+
 package utils
 
 import (
@@ -41,7 +46,7 @@ func UpdateXAppA1InterfaceIPAddr(ipAddress string) error {
 	}
 
 	for i := 0; i < len(xAppObject.Interfaces); i++ {
-		if xAppObject.Interfaces[i].Type== topoapi.Interface_INTERFACE_A1_XAPP {
+		if xAppObject.Interfaces[i].Type == topoapi.Interface_INTERFACE_A1_XAPP {
 			xAppObject.Interfaces[i].IP = ipAddress
 		}
 	}

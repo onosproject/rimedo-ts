@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2019-present Open Networking Foundation <info@opennetworking.org>
+// SPDX-FileCopyrightText: 2019-present Rimedo Labs
+//
+// SPDX-License-Identifier: Apache-2.0
 // Created by RIMEDO-Labs team
 // based on onosproject/onos-mho/pkg/southbound/e2/manager.go
 
@@ -8,9 +12,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/onosproject/rimedo-ts/pkg/mho"
-	"github.com/onosproject/rimedo-ts/pkg/monitoring"
-	"github.com/onosproject/rimedo-ts/pkg/rnib"
 	prototypes "github.com/gogo/protobuf/types"
 	e2api "github.com/onosproject/onos-api/go/onos/e2t/e2/v1beta1"
 	topoapi "github.com/onosproject/onos-api/go/onos/topo"
@@ -20,6 +21,9 @@ import (
 	"github.com/onosproject/onos-lib-go/pkg/logging"
 	"github.com/onosproject/onos-mho/pkg/broker"
 	e2client "github.com/onosproject/onos-ric-sdk-go/pkg/e2/v1beta1"
+	"github.com/onosproject/rimedo-ts/pkg/mho"
+	"github.com/onosproject/rimedo-ts/pkg/monitoring"
+	"github.com/onosproject/rimedo-ts/pkg/rnib"
 	"google.golang.org/protobuf/proto"
 )
 

@@ -1,3 +1,8 @@
+# SPDX-FileCopyrightText: 2019-present Open Networking Foundation <info@opennetworking.org>
+# SPDX-FileCopyrightText: 2019-present Rimedo Labs
+#
+# SPDX-License-Identifier: Apache-2.0
+
 FROM onosproject/golang-build:v1.0 as build
 
 ENV GO111MODULE=on
