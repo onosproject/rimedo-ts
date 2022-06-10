@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2019-present Open Networking Foundation <info@opennetworking.org>
+// SPDX-FileCopyrightText: 2019-present Rimedo Labs
+//
+// SPDX-License-Identifier: Apache-2.0
 // Created by RIMEDO-Labs team
 package policy
 
@@ -9,9 +13,9 @@ import (
 	"math"
 	"os"
 
-	"github.com/onosproject/rimedo-ts/pkg/mho"
 	policyAPI "github.com/onosproject/onos-a1-dm/go/policy_schemas/traffic_steering_preference/v2"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
+	"github.com/onosproject/rimedo-ts/pkg/mho"
 	"github.com/xeipuuv/gojsonschema"
 )
 

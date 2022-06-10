@@ -1,3 +1,8 @@
+// SPDX-FileCopyrightText: 2019-present Open Networking Foundation <info@opennetworking.org>
+// SPDX-FileCopyrightText: 2019-present Rimedo Labs
+//
+// SPDX-License-Identifier: Apache-2.0
+
 package utils
 
 import (
@@ -24,7 +29,7 @@ func PutA1Policy(policy string) error {
 		return err
 	}
 
-	if resp.StatusCode != 200 &&  resp.StatusCode != 201 {
+	if resp.StatusCode != 200 && resp.StatusCode != 201 {
 		return fmt.Errorf("status code is not 200 or 201: %v", resp.StatusCode)
 	}
 
