@@ -98,7 +98,7 @@ func (m *Manager) Run(flag *bool) {
 }
 
 func (m *Manager) start(flag *bool) error {
-	m.startNorthboundServer()
+	_ = m.startNorthboundServer()
 	err := m.e2Manager.Start()
 	if err != nil {
 		log.Warn(err)
@@ -330,11 +330,5 @@ func (m *Manager) SwitchUeBetweenCells(ctx context.Context, ueID string, targetC
 }
 
 func shouldBeSwitched(ue mho.UeData, cgi string) bool {
-
-	servingCgi := ue.CGIString
-	if servingCgi == cgi {
-		return false
-	}
-	return true
-
+	return ue.CGIString != cgi
 }
