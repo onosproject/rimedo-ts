@@ -12,7 +12,7 @@ COPY Makefile go.mod go.sum /go/src/github.com/rimedo-labs/rimedo-ts/
 COPY cmd/ /go/src/github.com/rimedo-labs/rimedo-ts/cmd/
 COPY vendor/ /go/src/github.com/rimedo-labs/rimedo-ts/vendor/
 COPY pkg/ /go/src/github.com/rimedo-labs/rimedo-ts/pkg/
-COPY build/build-tools /go/src/github.com/rimedo-labs/rimedo-ts/build/build-tools/
+COPY build/ /go/src/github.com/rimedo-labs/rimedo-ts/build/
 # COPY policytypes /go/src/github.com/rimedo-labs/rimedo-ts/policytypes/
 # COPY schemas /go/src/github.com/rimedo-labs/rimedo-ts/schemas/
 
