@@ -14,6 +14,6 @@ require (
 	github.com/onosproject/onos-ric-sdk-go v0.8.9
 	github.com/onosproject/onos-test v0.6.5
 	github.com/xeipuuv/gojsonschema v1.2.0
-	google.golang.org/grpc v1.41.0
-	google.golang.org/protobuf v1.27.1
+	google.golang.org/grpc v1.56.3
+	google.golang.org/protobuf v1.30.0
 )
