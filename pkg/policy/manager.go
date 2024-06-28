@@ -277,86 +277,86 @@ func (m *PolicyManager) LoadPolicyJsonFromFileV2(path string) ([]byte, error) {
 
 }
 
-func (m *PolicyManager) isSimilarEnforced(policyData *mho.PolicyData) bool {
-	for _, policy := range *m.policyMap {
-
-		sameSlice := false
-		sameUE := false
-		sameQoS := false
-		sameCellID := false
-
-		if (policyData.API.Scope.SliceID == nil && policy.API.Scope.SliceID == nil) ||
-			(policyData.API.Scope.SliceID != nil && policy.API.Scope.SliceID != nil &&
-				policy.API.Scope.SliceID.Sst == policyData.API.Scope.SliceID.Sst &&
-				policy.API.Scope.SliceID.SD != nil && policyData.API.Scope.SliceID.SD != nil &&
-				*policy.API.Scope.SliceID.SD == *policyData.API.Scope.SliceID.SD &&
-				policy.API.Scope.SliceID.PlmnID.Mcc == policyData.API.Scope.SliceID.PlmnID.Mcc &&
-				policy.API.Scope.SliceID.PlmnID.Mnc == policyData.API.Scope.SliceID.PlmnID.Mnc) {
-			sameSlice = true
-		}
-
-		if (policyData.API.Scope.UeID == nil && policy.API.Scope.UeID == nil) ||
-			(policyData.API.Scope.UeID != nil && policy.API.Scope.UeID != nil && *policy.API.Scope.UeID == *policyData.API.Scope.UeID) {
-			sameUE = true
-		}
-
-		if (policyData.API.Scope.QosID == nil && policy.API.Scope.QosID == nil) ||
-			(policyData.API.Scope.QosID != nil && policy.API.Scope.QosID != nil &&
-				((policy.API.Scope.QosID.QcI != nil && policyData.API.Scope.QosID.QcI != nil &&
-					*policy.API.Scope.QosID.QcI == *policyData.API.Scope.QosID.QcI) ||
-					(policy.API.Scope.QosID.The5QI != nil && policyData.API.Scope.QosID.The5QI != nil &&
-						*policy.API.Scope.QosID.The5QI == *policyData.API.Scope.QosID.The5QI))) {
-			sameQoS = true
-		}
-
-		if (policyData.API.Scope.CellID == nil && policy.API.Scope.CellID == nil) ||
-			(policyData.API.Scope.CellID != nil && policy.API.Scope.CellID != nil &&
-				((policy.API.Scope.CellID.CID.NcI != nil && policyData.API.Scope.CellID.CID.NcI != nil &&
-					*policy.API.Scope.CellID.CID.NcI == *policyData.API.Scope.CellID.CID.NcI) ||
-					(policy.API.Scope.CellID.CID.EcI != nil && policyData.API.Scope.CellID.CID.EcI != nil &&
-						*policy.API.Scope.CellID.CID.EcI == *policyData.API.Scope.CellID.CID.EcI)) &&
-				policy.API.Scope.CellID.PlmnID.Mcc == policyData.API.Scope.CellID.PlmnID.Mcc &&
-				policy.API.Scope.CellID.PlmnID.Mnc == policyData.API.Scope.CellID.PlmnID.Mnc) {
-			sameCellID = true
-		}
-
-		if sameSlice {
-			if sameUE {
-				if sameQoS {
-					if !sameCellID {
-						continue
-					}
-				} else {
-					continue
-				}
-			} else {
-				if sameQoS {
-					if !sameCellID {
-						continue
-					}
-				} else {
-					continue
-				}
-			}
-		} else {
-			if sameUE {
-				if sameQoS {
-					if !sameCellID {
-						continue
-					}
-				} else {
-					continue
-				}
-			} else {
-				continue
-			}
-		}
-
-		if policy.IsEnforced {
-			policy.IsEnforced = false
-			return true
-		}
-
-	}
-	return false
-}
+//func (m *PolicyManager) isSimilarEnforced(policyData *mho.PolicyData) bool {
+//	for _, policy := range *m.policyMap {
+//
+//		sameSlice := false
+//		sameUE := false
+//		sameQoS := false
+//		sameCellID := false
+//
+//		if (policyData.API.Scope.SliceID == nil && policy.API.Scope.SliceID == nil) ||
+//			(policyData.API.Scope.SliceID != nil && policy.API.Scope.SliceID != nil &&
+//				policy.API.Scope.SliceID.Sst == policyData.API.Scope.SliceID.Sst &&
+//				policy.API.Scope.SliceID.SD != nil && policyData.API.Scope.SliceID.SD != nil &&
+//				*policy.API.Scope.SliceID.SD == *policyData.API.Scope.SliceID.SD &&
+//				policy.API.Scope.SliceID.PlmnID.Mcc == policyData.API.Scope.SliceID.PlmnID.Mcc &&
+//				policy.API.Scope.SliceID.PlmnID.Mnc == policyData.API.Scope.SliceID.PlmnID.Mnc) {
+//			sameSlice = true
+//		}
+//
+//		if (policyData.API.Scope.UeID == nil && policy.API.Scope.UeID == nil) ||
+//			(policyData.API.Scope.UeID != nil && policy.API.Scope.UeID != nil && *policy.API.Scope.UeID == *policyData.API.Scope.UeID) {
+//			sameUE = true
+//		}
+//
+//		if (policyData.API.Scope.QosID == nil && policy.API.Scope.QosID == nil) ||
+//			(policyData.API.Scope.QosID != nil && policy.API.Scope.QosID != nil &&
+//				((policy.API.Scope.QosID.QcI != nil && policyData.API.Scope.QosID.QcI != nil &&
+//					*policy.API.Scope.QosID.QcI == *policyData.API.Scope.QosID.QcI) ||
+//					(policy.API.Scope.QosID.The5QI != nil && policyData.API.Scope.QosID.The5QI != nil &&
+//						*policy.API.Scope.QosID.The5QI == *policyData.API.Scope.QosID.The5QI))) {
+//			sameQoS = true
+//		}
+//
+//		if (policyData.API.Scope.CellID == nil && policy.API.Scope.CellID == nil) ||
+//			(policyData.API.Scope.CellID != nil && policy.API.Scope.CellID != nil &&
+//				((policy.API.Scope.CellID.CID.NcI != nil && policyData.API.Scope.CellID.CID.NcI != nil &&
+//					*policy.API.Scope.CellID.CID.NcI == *policyData.API.Scope.CellID.CID.NcI) ||
+//					(policy.API.Scope.CellID.CID.EcI != nil && policyData.API.Scope.CellID.CID.EcI != nil &&
+//						*policy.API.Scope.CellID.CID.EcI == *policyData.API.Scope.CellID.CID.EcI)) &&
+//				policy.API.Scope.CellID.PlmnID.Mcc == policyData.API.Scope.CellID.PlmnID.Mcc &&
+//				policy.API.Scope.CellID.PlmnID.Mnc == policyData.API.Scope.CellID.PlmnID.Mnc) {
+//			sameCellID = true
+//		}
+//
+//		if sameSlice {
+//			if sameUE {
+//				if sameQoS {
+//					if !sameCellID {
+//						continue
+//					}
+//				} else {
+//					continue
+//				}
+//			} else {
+//				if sameQoS {
+//					if !sameCellID {
+//						continue
+//					}
+//				} else {
+//					continue
+//				}
+//			}
+//		} else {
+//			if sameUE {
+//				if sameQoS {
+//					if !sameCellID {
+//						continue
+//					}
+//				} else {
+//					continue
+//				}
+//			} else {
+//				continue
+//			}
+//		}
+//
+//		if policy.IsEnforced {
+//			policy.IsEnforced = false
+//			return true
+//		}
+//
+//	}
+//	return false
+//}

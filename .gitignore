@@ -3,7 +3,24 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-build
-vendor
+build/_output/*
+build/build-tools
+**/_output
+*.DS_Store
+coverage.txt
+*.coverprofile
 .idea
+.vscode
+*.o
+*.a
+.project
+.cproject
+.eclipse
+.settings/
 
+# Jenkins report files
+*report*.xml
+*coverage*.xml
+*-output.out
+vendor
+venv

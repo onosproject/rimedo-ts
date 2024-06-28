@@ -127,7 +127,7 @@ func (a *A1PServer) PolicySetup(ctx context.Context, message *a1tapi.PolicyReque
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	var result map[string]interface{}
-	json.Unmarshal(message.Message.Payload, &result)
+	_ = json.Unmarshal(message.Message.Payload, &result)
 
 	if message.PolicyType.Id != "ORAN_TrafficSteeringPreference_2.0.0" {
 		res := &a1tapi.PolicyResultMessage{
@@ -223,7 +223,7 @@ func (a *A1PServer) PolicyUpdate(ctx context.Context, message *a1tapi.PolicyRequ
 	defer a.mu.Unlock()
 
 	var result map[string]interface{}
-	json.Unmarshal(message.Message.Payload, &result)
+	_ = json.Unmarshal(message.Message.Payload, &result)
 
 	if message.PolicyType.Id != "ORAN_TrafficSteeringPreference_2.0.0" {
 		res := &a1tapi.PolicyResultMessage{
@@ -318,7 +318,7 @@ func (a *A1PServer) PolicyDelete(ctx context.Context, message *a1tapi.PolicyRequ
 	defer a.mu.Unlock()
 
 	var result map[string]interface{}
-	json.Unmarshal(message.Message.Payload, &result)
+	_ = json.Unmarshal(message.Message.Payload, &result)
 
 	if message.PolicyType.Id != "ORAN_TrafficSteeringPreference_2.0.0" {
 		res := &a1tapi.PolicyResultMessage{
@@ -385,7 +385,7 @@ func (a *A1PServer) PolicyQuery(ctx context.Context, message *a1tapi.PolicyReque
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	var result map[string]interface{}
-	json.Unmarshal(message.Message.Payload, &result)
+	_ = json.Unmarshal(message.Message.Payload, &result)
 
 	if message.PolicyType.Id != "ORAN_TrafficSteeringPreference_2.0.0" {
 		res := &a1tapi.PolicyResultMessage{

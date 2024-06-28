@@ -1,60 +1,64 @@
-# SPDX-FileCopyrightText: 2019-present Open Networking Foundation <info@opennetworking.org>
-# SPDX-FileCopyrightText: 2019-present Rimedo Labs
-#
 # SPDX-License-Identifier: Apache-2.0
+# Copyright 2019 Open Networking Foundation
+# Copyright 2019 Rimedo Labs
+# Copyright 2024 Intel Corporation
 
 .PHONY: build
-#GO111MODULE=on 
+export CGO_ENABLED=1
+export GO111MODULE=on
 
-XAPPNAME=rimedo-ts
-RIMEDO_TS_VERSION := latest
+RIMEDO_TS_VERSION ?= latest
 
-build:
-	GOPRIVATE="github.com/onosproject/*" go build -o build/_output/$(XAPPNAME) ./cmd/$(XAPPNAME)
+GOLANG_CI_VERSION := v1.52.2
 
-build-tools:=$(shell if [ ! -d "./build/build-tools" ]; then cd build && git clone https://github.com/onosproject/build-tools.git; fi)
-include ./build/build-tools/make/onf-common.mk
+all: build docker-build
 
-docker:
+build: # @HELP build the Go binaries and run all validations (default)
+	GOPRIVATE="github.com/onosproject/*" go build -o build/_output/rimedo-ts ./cmd/rimedo-ts
+
+test: # @HELP run the unit tests and source code validation
+test: build lint license
+	go test -race github.com/onosproject/rimedo-ts/pkg/...
+	go test -race github.com/onosproject/rimedo-ts/cmd/...
+
+docker-build-rimedo-ts: # @HELP build Docker image
 	@go mod vendor
-	sudo docker build --network host -f build/Dockerfile -t onosproject/$(XAPPNAME):$(RIMEDO_TS_VERSION) .
+	docker build --network host . -f build/rimedo-ts/Dockerfile \
+		-t onosproject/rimedo-ts:${RIMEDO_TS_VERSION}
 	@rm -rf vendor
 
-images: build
-	@go mod vendor
-	docker build -f build/Dockerfile -t onosproject/$(XAPPNAME):$(RIMEDO_TS_VERSION) .
-	@rm -rf vendor
+docker-build: # @HELP build all Docker images
+docker-build: build docker-build-rimedo-ts
 
-kind: images
-	@if [ "`kind get clusters`" = '' ]; then echo "no kind cluster found" && exit 1; fi
-	kind load docker-image onosproject/$(XAPPNAME):${RIMEDO_TS_VERSION}
+docker-push-rimedo-ts: # @HELP push Docker image
+	docker push onosproject/rimedo-ts:${RIMEDO_TS_VERSION}
 
-helmit-ts: integration-test-namespace # @HELP run PCI tests locally
-	helmit test -n test ./cmd/rimedo-ts-test --timeout 30m --no-teardown \
-			--suite ts
+docker-push: # @HELP push docker images
+docker-push: docker-push-rimedo-ts
 
-integration-tests: helmit-ts
+lint: # @HELP examines Go source code and reports coding problems
+	golangci-lint --version | grep $(GOLANG_CI_VERSION) || curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b `go env GOPATH`/bin $(GOLANG_CI_VERSION)
+	golangci-lint run --timeout 15m
 
-test: build license
-jenkins-test: build license
+license: # @HELP run license checks
+	rm -rf venv
+	python3 -m venv venv
+	. ./venv/bin/activate;\
+	python3 -m pip install --upgrade pip;\
+	python3 -m pip install reuse;\
+	reuse lint
 
-docker-login:
-ifdef DOCKER_USER
-ifdef DOCKER_PASSWORD
-	echo ${DOCKER_PASSWORD} | docker login -u ${DOCKER_USER} --password-stdin
-else
-	@echo "DOCKER_USER is specified but DOCKER_PASSWORD is missing"
-	@exit 1
-endif
-endif
+check-version: # @HELP check version is duplicated
+	./build/bin/version_check.sh all
 
-docker-push-latest: docker-login
-	docker push onosproject/$(XAPPNAME):latest
+clean: # @HELP remove all the build artifacts
+	rm -rf ./build/_output ./vendor ./cmd/rimedo-ts/rimedo-ts ./cmd/onos/onos venv
+	go clean github.com/onosproject/rimedo-ts/...
 
-publish: # @HELP publish version on github and dockerhub
-	./build/build-tools/publish-version ${VERSION} onosproject/$(XAPPNAME)
-
-jenkins-publish: jenkins-tools images docker-push-latest # @HELP Jenkins calls this to publish artifacts
-	./build/build-tools/release-merge-commit
-
-
+help:
+	@grep -E '^.*: *# *@HELP' $(MAKEFILE_LIST) \
+    | sort \
+    | awk ' \
+        BEGIN {FS = ": *# *@HELP"}; \
+        {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}; \
+    '

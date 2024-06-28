@@ -9,7 +9,6 @@ package manager
 import (
 	"context"
 	"fmt"
-	"math/rand"
 	"sort"
 	"strconv"
 	"sync"
@@ -517,27 +516,27 @@ func (m *Manager) showAvailableNodes(ctx context.Context, showFlag bool, prepare
 	}
 }
 
-func (m *Manager) changeCellsTypes(ctx context.Context) {
-	m.mutex.Lock()
-	defer m.mutex.Unlock()
-	cellTypes := make(map[int]string)
-	cellTypes[0] = "Macro"
-	cellTypes[1] = "SmallCell"
-	for {
-		time.Sleep(10 * time.Second)
-		cells := m.sdranManager.GetCellTypes(ctx)
-		type_id := rand.Intn(len(cellTypes))
-		for key, val := range cells {
-			_ = val
-			err := m.sdranManager.SetCellType(ctx, key, cellTypes[type_id])
-			if err != nil {
-				log.Warn(err)
-			}
-			break
-		}
-
-	}
-}
+//func (m *Manager) changeCellsTypes(ctx context.Context) {
+//	m.mutex.Lock()
+//	defer m.mutex.Unlock()
+//	cellTypes := make(map[int]string)
+//	cellTypes[0] = "Macro"
+//	cellTypes[1] = "SmallCell"
+//	for {
+//		time.Sleep(10 * time.Second)
+//		cells := m.sdranManager.GetCellTypes(ctx)
+//		type_id := rand.Intn(len(cellTypes))
+//		for key, val := range cells {
+//			_ = val
+//			err := m.sdranManager.SetCellType(ctx, key, cellTypes[type_id])
+//			if err != nil {
+//				log.Warn(err)
+//			}
+//			break
+//		}
+//
+//	}
+//}
 
 func (m *Manager) PlmnIDNciToCGI(plmnID uint64, nci uint64) string {
 	cgi := strconv.FormatInt(int64(plmnID<<36|(nci&0xfffffffff)), 16)
