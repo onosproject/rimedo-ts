@@ -4,7 +4,7 @@ go 1.16
 
 require (
 	github.com/gogo/protobuf v1.3.2
-	github.com/google/uuid v1.3.0
+	github.com/google/uuid v1.6.0
 	github.com/onosproject/helmit v0.6.19
 	github.com/onosproject/onos-a1-dm/go v0.0.5
 	github.com/onosproject/onos-api/go v0.9.11
@@ -14,6 +14,6 @@ require (
 	github.com/onosproject/onos-ric-sdk-go v0.8.9
 	github.com/onosproject/onos-test v0.6.5
 	github.com/xeipuuv/gojsonschema v1.2.0
-	google.golang.org/grpc v1.41.0
-	google.golang.org/protobuf v1.27.1
+	google.golang.org/grpc v1.65.0
+	google.golang.org/protobuf v1.34.1
 )
