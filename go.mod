@@ -15,5 +15,5 @@ require (
 	github.com/onosproject/onos-test v0.6.5
 	github.com/xeipuuv/gojsonschema v1.2.0
 	google.golang.org/grpc v1.41.0
-	google.golang.org/protobuf v1.27.1
+	google.golang.org/protobuf v1.34.2
 )
